@@ -2,3 +2,4 @@
 *.exe
 *.iml
 node_modules
+build
