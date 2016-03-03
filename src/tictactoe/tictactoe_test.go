@@ -148,36 +148,30 @@ func TestMiniMax(t *testing.T) {
   bot := Bot{1}
 
   testTable := []struct {
-    field  []string
-    expect int
+    field      []string
+    expect     int
+    currPlayer int
   }{
-    /*{
-      []string{
-        "X", "O", "X",
-        "X", "O", "_",
-        "_", "_", "X",
-      }, 7,
-    },
-    {
-      []string{
-        "_", "_", "X",
-        "X", "_", "_",
-        "_", "_", "X",
-      }, 5,
-    },*/
     {
       []string{
         "_", "_", "O",
         "O", "X", "X",
         "O", "X", "_",
-      }, 0,
+      }, 0, 1,
     },
     {
       []string{
         "_", "_", "O",
         "O", "X", "X",
         "_", "X", "O",
-      }, 1,
+      }, 1, 1,
+    },
+    {
+      []string{
+        "X", "_", "_",
+        "_", "_", "_",
+        "_", "_", "_",
+      }, 4, 1,
     },
   }
 
@@ -185,6 +179,7 @@ func TestMiniMax(t *testing.T) {
 
   for _, val := range testTable {
     b.field = val.field
+    b.currPlayer = val.currPlayer
     res := bot.doTurn(b)
     if val.expect != res {
       t.Error("Expected", val.expect, "got", res)
