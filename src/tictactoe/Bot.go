@@ -5,18 +5,21 @@ type Bot struct {
   id int
 }
 
-func (this Bot) calcTurn(field []string, depth int, maximizing bool, alpha, beta int) int {
-  b := Board{}
-  b.field = make([]string, len(field))
-  copy(b.field, field)
+func (b *Bot) calcTurn(field []string, depth int, maximizing bool, alpha, beta int) int {
+  board := board
+  board.field = make([]string, len(field))
+  copy(board.field, field)
 
-  if b.checkWinCondition(this.id) {
-    return 10 - depth
+  if board.checkWinCondition(b.id) {
+    return 100 - depth
   }
-  if b.checkWinCondition(1 ^ this.id) {
-    return -10 + depth
+  if board.checkWinCondition(1 ^ b.id) {
+    return -100 + depth
   }
-  if b.isTied() {
+  if board.isTied() {
+    return 0
+  }
+  if depth >= 8 {
     return 0
   }
 
@@ -25,24 +28,24 @@ func (this Bot) calcTurn(field []string, depth int, maximizing bool, alpha, beta
 
   if maximizing {
     v = -9000
-    b.currPlayer = this.id
+    board.currPlayer = b.id
   } else {
     v = 9000
-    b.currPlayer = 1 ^ this.id
+    board.currPlayer = 1 ^ b.id
   }
 
   var bestMove int
   for i := range field {
-    b.field = make([]string, len(field))
-    copy(b.field, field)
+    board.field = make([]string, len(field))
+    copy(board.field, field)
 
-    if !b.isValidMove(i) {
+    if !board.isValidMove(i) {
       continue
     }
 
-    b.setBoard(i)
+    board.setBoard(i)
 
-    score[i] = this.calcTurn(b.field, depth + 1, !maximizing, alpha, beta)
+    score[i] = b.calcTurn(board.field, depth + 1, !maximizing, alpha, beta)
 
     if maximizing {
       if score[i] > v {
@@ -72,8 +75,8 @@ func (this Bot) calcTurn(field []string, depth int, maximizing bool, alpha, beta
   return v
 }
 
-func (this Bot) doTurn(b Board) int {
-  return this.calcTurn(b.field, 0, true, -9000, 9000)
+func (b *Bot) doTurn(board *Board) int {
+  return b.calcTurn(board.field, 0, true, -9000, 9000)
 }
 
 func max(a, b int) int {

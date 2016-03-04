@@ -6,12 +6,12 @@ import (
 //"fmt"
 )
 
-var board = Board{
+var board_test = Board{
   []string{
     "_", "_", "_",
     "_", "_", "_",
     "_", "_", "_",
-  }, 0, 0,
+  }, 0, 0, true, 3, 3,
 }
 
 func TestWinCondition(t *testing.T) {
@@ -66,20 +66,22 @@ func TestWinCondition(t *testing.T) {
     }, false},
   }
 
-  b := board
+  b := board_test
   b.currPlayer = 0
+  b.size = 3
+  b.winCondition = 3
 
   for _, val := range testFields {
     b.field = val.field
     res := b.checkWinCondition(b.currPlayer)
     if res != val.expect {
-      t.Error("Expected", val.expect, "got", res)
+      t.Error(players[b.currPlayer], val.field, "Expected", val.expect, "got", res)
     }
   }
 }
 
 func TestMoveValidation(t *testing.T) {
-  b := board
+  b := board_test
 
   b.field[1] = "O"
 
@@ -105,7 +107,7 @@ func TestMoveValidation(t *testing.T) {
 }
 
 func TestNextTurn(t *testing.T) {
-  b := board
+  b := board_test
   //turn, player := b.turn, b.currPlayer
   //b.doTurn  func() {}
   //b.nextTurn()
@@ -137,6 +139,7 @@ func TestAssignment(t *testing.T) {
 
 }
 
+/*
 func TestMiniMax(t *testing.T) {
   b := Board{
     []string{
@@ -186,4 +189,31 @@ func TestMiniMax(t *testing.T) {
     }
   }
 
+}*/
+
+func TestPointFromIndex(t *testing.T) {
+  b := Board{
+    botOnly: true,
+    size: 4,
+    winCondition: 3,
+  }
+  b.buildField()
+  testField := []struct {
+    index  int
+    expect Point
+  }{
+    {0, Point{0, 0}},
+    {1, Point{1, 0}},
+    {5, Point{1, 1}},
+    {8, Point{0, 2}},
+    {14, Point{2, 3}},
+  }
+
+  for _, val := range testField {
+    point := Point{}
+    point.fromIndex(val.index, b.size)
+    if val.expect != point {
+      t.Error("Expect", val.expect, "to be", point)
+    }
+  }
 }

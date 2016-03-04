@@ -14,7 +14,8 @@ var board = Board{}
 
 func main() {
   //go serverSetup()
-
+  board.size = 3
+  board.winCondition = 3
   board.start()
 }
 
@@ -24,18 +25,16 @@ var bot = Bot{1}
 var bot2 = Bot{0}
 
 type Board struct {
-  field      []string
-  currPlayer int
-  turn       int
-  botOnly    bool
+  field        []string
+  currPlayer   int
+  turn         int
+  botOnly      bool
+  size         int
+  winCondition int
 }
 
-func (b Board) start() {
-  b.field = []string{
-    "_", "_", "_",
-    "_", "_", "_",
-    "_", "_", "_",
-  }
+func (b *Board) start() {
+  b.buildField()
   rand.Seed(time.Now().UnixNano())
   b.currPlayer = rand.Intn(2)
   b.turn = 1
@@ -43,7 +42,14 @@ func (b Board) start() {
   b.doTurn()
 }
 
-func (b Board) readPlayerInput() int {
+func (b *Board) buildField() {
+  b.field = make([]string, b.size * b.size)
+  for i := 0; i < len(b.field); i++ {
+    b.field[i] = "_"
+  }
+}
+
+func (b *Board) readPlayerInput() int {
   reader := bufio.NewReader(os.Stdin)
   fmt.Printf("Player %s set: ", players[b.currPlayer])
   input, _ := reader.ReadString('\n')
@@ -56,7 +62,7 @@ func (b Board) readPlayerInput() int {
   return int(i)
 }
 
-func (b Board) isTied() bool {
+func (b *Board) isTied() bool {
   if b.checkWinCondition(0) || b.checkWinCondition(1) {
     return false
   }
@@ -68,7 +74,7 @@ func (b Board) isTied() bool {
   return true
 }
 
-func (b Board) doTurn() {
+func (b *Board) doTurn() {
   drawBoard(b)
   var i int
 
@@ -79,7 +85,7 @@ func (b Board) doTurn() {
     i = bot2.doTurn(b)
     fmt.Printf("Player %s set: %d\n", players[b.currPlayer], i)
   } else {
-    i = b.readPlayerInput()
+    i = b.readPlayerInput() - 1
   }
 
   if !b.isValidMove(i) {
@@ -113,35 +119,77 @@ func (b Board) doTurn() {
   b.nextTurn()
 }
 
-func (b Board) checkWinCondition(currPlayer int) bool {
-  for i := 0; i < 3; i++ {
-    if b.field[0 + i * 3] == players[currPlayer] && b.field[1 + i * 3] == players[currPlayer] && b.field[2 + i * 3] == players[currPlayer] {
+func (b *Board) checkWinCondition(currPlayer int) bool {
+  for i := range b.field {
+    p := Point{}
+    p.fromIndex(i, b.size)
+    if b.checkWinDirections(p, currPlayer) {
       return true
     }
-    if b.field[0 + i] == players[currPlayer] && b.field[3 + i] == players[currPlayer] && b.field[6 + i] == players[currPlayer] {
-      return true
-    }
-    if b.field[4] == players[currPlayer] &&
-    (b.field[0] == players[currPlayer] && b.field[8] == players[currPlayer] ||
-    b.field[2] == players[currPlayer] && b.field[6] == players[currPlayer]) {
-      return true
-    }
+  }
+
+  return false
+}
+
+const (
+  RIGHT = iota
+  DOWN
+  DIAG_UP
+  DIAG_DOWN
+)
+
+func (b *Board) checkWinDirections(p Point, currPlayer int) bool {
+  return b.checkWinDirection(p, RIGHT, 0, currPlayer) ||
+  b.checkWinDirection(p, DOWN, 0, currPlayer) ||
+  b.checkWinDirection(p, DIAG_UP, 0, currPlayer) ||
+  b.checkWinDirection(p, DIAG_DOWN, 0, currPlayer)
+}
+func (b *Board) checkWinDirection(p Point, direction, depth, currPlayer int) bool {
+  player := players[currPlayer]
+
+  if v, ok := b.getField(p); v != player || !ok {
+    return false
+  }
+
+  if depth >= b.winCondition - 1 {
+    return true
+  }
+
+  switch direction {
+  case RIGHT:
+    p.x++
+    return b.checkWinDirection(p, RIGHT, depth + 1, currPlayer)
+    break
+  case DOWN:
+    p.y++
+    return b.checkWinDirection(p, DOWN, depth + 1, currPlayer)
+    break
+  case DIAG_UP:
+    p.x++
+    p.y++
+    return b.checkWinDirection(p, DIAG_UP, depth + 1, currPlayer)
+    break
+  case DIAG_DOWN:
+    p.x++
+    p.y--
+    return b.checkWinDirection(p, DIAG_DOWN, depth + 1, currPlayer)
+    break
   }
   return false
 }
 
-func (b Board) isValidMove(i int) bool {
-  if i < 0 || i > 8 {
+func (b *Board) isValidMove(i int) bool {
+  if i < 0 || i >= len(b.field) {
     return false
   }
   return b.field[i] == "_"
 }
 
-func (b Board) setBoard(i int) {
+func (b *Board) setBoard(i int) {
   b.field[i] = players[b.currPlayer]
 }
 
-func (b Board) nextTurn() {
+func (b *Board) nextTurn() {
   b.turn++
   b.currPlayer++
   if b.currPlayer == 2 {
@@ -149,4 +197,30 @@ func (b Board) nextTurn() {
   }
 
   b.doTurn()
+}
+
+func (b *Board) getField(p Point) (string, bool) {
+  if (p.x >= b.size || p.y >= b.size) {
+    return ".", false
+  }
+  if (p.x < 0 || p.y < 0) {
+    return ".", false
+  }
+  return b.field[p.toIndex(b.size)], true
+}
+
+func (b *Board) setField(x, y int, val string) {
+  b.field[x + b.size * y] = val
+}
+
+type Point struct {
+  x, y int
+}
+
+func (p *Point) toIndex(size int) int {
+  return p.x + size * p.y
+}
+func (p *Point) fromIndex(index, size int) {
+  p.x = index % size
+  p.y = (index - p.x) / size
 }
