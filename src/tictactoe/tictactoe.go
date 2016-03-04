@@ -20,75 +20,6 @@ func main() {
 
 var players = []string{"X", "O"}
 
-type Bot struct {
-  id int
-}
-
-func (this Bot) calcTurn(field []string, depth int, maximizing bool) int {
-  b := Board{}
-  b.field = make([]string, len(field))
-  copy(b.field, field)
-
-  if b.checkWinCondition(this.id) {
-    return 10 - depth
-  }
-  if b.checkWinCondition(1 ^ this.id) {
-    return -10 + depth
-  }
-  if b.isTied() {
-    return 0
-  }
-
-  score := make(map[int]int)
-
-  if maximizing {
-    b.currPlayer = this.id
-  } else {
-    b.currPlayer = 1 ^ this.id
-  }
-
-  for i := range field {
-    b.field = make([]string, len(field))
-    copy(b.field, field)
-
-    if !b.isValidMove(i) {
-      continue
-    }
-
-    b.setBoard(i)
-
-    score[i] = this.calcTurn(b.field, depth + 1, !maximizing)
-
-  }
-  var bestMove int
-  var bestScore int
-
-  if maximizing {
-    bestScore = -9000
-  } else {
-    bestScore = 9000
-  }
-
-  for index, val := range score {
-    if maximizing && bestScore < val {
-      bestScore = val
-      bestMove = index
-    }
-    if !maximizing && bestScore > val {
-      bestScore = val
-      bestMove = index
-    }
-  }
-  if (depth == 0) {
-    return bestMove
-  }
-  return bestScore
-}
-
-func (this Bot) doTurn(b Board) int {
-  return this.calcTurn(b.field, 0, true)
-}
-
 var bot = Bot{1}
 var bot2 = Bot{0}
 
@@ -150,7 +81,6 @@ func (b Board) doTurn() {
   } else {
     i = b.readPlayerInput()
   }
-
 
   if !b.isValidMove(i) {
     fmt.Println("Invalid Move!")
